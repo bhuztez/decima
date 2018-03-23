@@ -1,0 +1,8 @@
+_build/
+bin/
+src/mono_lexer.erl
+src/mono_grammar.erl
+*~
+*.lock
+*.bc
+*.elf

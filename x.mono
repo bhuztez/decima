@@ -1,0 +1,5 @@
+# comment
+fun main() :void
+is
+  write(:int 0, "Hello, world!", :size 14)
+end
