@@ -1,5 +1,5 @@
-{application, mono,
- [{description, "Mono Programming Language"},
+{application, decima,
+ [{description, "Decima Programming Language"},
   {vsn, "0.0.1"},
   {registered, []},
   {applications,

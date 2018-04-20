@@ -1,4 +1,4 @@
--module(mono_parse).
+-module(decima_parse).
 
 -export([file/2]).
 
@@ -24,12 +24,12 @@ parse_modules([H|T], Namespace, LibPath) ->
 
 parse_submodule(Mod, ModPath, FilePath) ->
     ModPath1 = ModPath ++ [Mod],
-    case file:read_file(filename:join(FilePath, [Mod,".mono"])) of
+    case file:read_file(filename:join(FilePath, [Mod,".dec"])) of
         {ok, Bin} ->
             parse_module(Bin, ModPath1);
         {error, enoent} ->
             FilePath1 = filename:join(FilePath, Mod),
-            {ok, Bin} = file:read_file(filename:join(FilePath1,"mod.mono")),
+            {ok, Bin} = file:read_file(filename:join(FilePath1,"mod.dec")),
             {Symbols, Modules} = parse_module(Bin, ModPath1),
             Submodules =
                 [{M, parse_submodule(M, ModPath1, FilePath1)}
@@ -41,8 +41,8 @@ parse_submodule(Mod, ModPath, FilePath) ->
     end.
 
 parse_module(Bin, ModPath) ->
-    {ok, Tokens, _} = mono_lexer:string(binary_to_list(Bin)),
-    {ok, Forms} = mono_grammar:parse(Tokens),
+    {ok, Tokens, _} = decima_lexer:string(binary_to_list(Bin)),
+    {ok, Forms} = decima_grammar:parse(Tokens),
     Symbols = forms(Forms, ModPath),
     Modules = lists:usort([Name || {_, {use, _, [Name|_]}} <- maps:to_list(Symbols)]),
     {Symbols, Modules}.

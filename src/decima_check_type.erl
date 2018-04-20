@@ -1,4 +1,4 @@
--module(mono_check_type).
+-module(decima_check_type).
 
 -export([modules/1]).
 
@@ -32,7 +32,7 @@ form({'fun', Line, Name, ArgsType, ReturnType, Body}, Namespace) when is_list(Bo
 
     Values1 =
         maps:map(
-          fun(_, V) -> mono_unify:subst(V, Subst) end,
+          fun(_, V) -> decima_unify:subst(V, Subst) end,
           Values),
 
     {'fun', Line, Name, ArgsType, ReturnType, Body, Values1};
@@ -88,5 +88,5 @@ lookup_type([H|T], Namespace) ->
 
 
 unify(X, Y, Tables = #{subst := Subst}) ->
-    Subst1 = mono_unify:unify(X, Y, Subst),
+    Subst1 = decima_unify:unify(X, Y, Subst),
     Tables#{subst := Subst1}.

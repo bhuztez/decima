@@ -1,7 +1,7 @@
 _build/
 bin/
-src/mono_lexer.erl
-src/mono_grammar.erl
+src/decima_lexer.erl
+src/decima_grammar.erl
 *~
 *.lock
 *.bc

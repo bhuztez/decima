@@ -1,4 +1,4 @@
--module(mono_unify).
+-module(decima_unify).
 
 -export([unify/3, subst/2]).
 

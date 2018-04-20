@@ -1,4 +1,4 @@
--module(mono_codegen).
+-module(decima_codegen).
 
 -export([modules/1]).
 

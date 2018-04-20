@@ -1,4 +1,4 @@
--module(mono_resolve_var).
+-module(decima_resolve_var).
 
 -export([modules/1]).
 
