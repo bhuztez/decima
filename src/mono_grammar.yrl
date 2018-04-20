@@ -1,5 +1,5 @@
-Nonterminals literal type type0 expr0 expr exprs0 exprs arg args0 args param params form forms.
-Terminals int string symbol var fun is end ':' '(' ')' '{' '}' '=>' ',' '.' '*' '@'.
+Nonterminals literal type type0 expr0 expr exprs0 exprs arg args0 args param params0 params level path form forms.
+Terminals int string symbol var fun is intrinsic begin end mod use ':' '(' ')' '{' '}' '=>' ',' '.' '*' '@'.
 Rootsymbol forms.
 
 literal -> int:
@@ -91,25 +91,49 @@ args -> '$empty':
   [].
 
 param -> symbol type:
-  {param, line('$1'), '$2'}.
+  {param, line('$1'), '$1', '$2'}.
 
-params -> params ',' param:
+params0 -> params0 ',' param:
   '$1' ++ ['$3'].
 
-params -> param:
+params0 -> param:
   ['$1'].
 
-form -> fun symbol '(' params ')' type is exprs end:
-  {'fun', line('$1'), '$2', [], '$6', '$8'}.
+params -> '(' ')':
+  [].
 
-form -> fun symbol '(' ')' type is exprs end:
-  {'fun', line('$1'), '$2', [], '$5', '$7'}.
+params -> '(' params0 ')':
+  '$2'.
+
+level -> level '.':
+  '$1' + 1.
+
+level -> '$empty':
+  0.
+
+path -> path '.' symbol:
+  '$1' ++ ['$3'].
+
+path -> symbol:
+  ['$1'].
+
+form -> mod symbol:
+  {'mod', line('$1'), '$2'}.
+
+form -> use level path:
+  {'use', line('$1'), '$2', '$3'}.
+
+form -> fun symbol params type is begin exprs end:
+  {'fun', line('$1'), '$2', '$3', '$4', '$7'}.
+
+form -> fun symbol params type is intrinsic:
+  {'fun', line('$1'), '$2', '$3', '$4', intrinsic}.
 
 forms -> forms form:
   '$1' ++ ['$2'].
 
-forms -> form:
-  ['$1'].
+forms -> '$empty':
+  [].
 
 Erlang code.
 

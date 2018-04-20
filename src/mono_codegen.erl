@@ -1,33 +1,43 @@
 -module(mono_codegen).
 
--export([module/1]).
+-export([modules/1]).
 
-module(Symbols) ->
-    {Forms, #{literals := Literals}} =
+modules(Modules) ->
+    {Modules1, #{literals := Literals}} =
         lists:mapfoldl(
-          fun form/2,
+          fun ({K, V}, State) ->
+                  module(V, io_lib:format("~s", [K]), State)
+          end,
           #{literals => #{},
             next => 1},
-          maps:values(Symbols)),
+          maps:to_list(Modules)),
 
-    ["declare void @.write(i32*, i8**, i64*)\n",
-     [io_lib:format(
+    [[io_lib:format(
         "@.~B = private unnamed_addr constant [~B x i8] c~s~n",
         [K, length(V)-2, V])
       || {K,V} <- maps:to_list(Literals)],
      "\n",
-     Forms].
+     Modules1].
 
+module(Module, Path, State) ->
+    lists:mapfoldl(
+      fun ({K, V}, S) ->
+              form(V, io_lib:format("~s.~s", [Path, K]), S)
+      end,
+      State,
+      maps:to_list(Module)).
 
-form({'fun', _Line, Name, _ArgsType, _ReturnType, Body, Types}, State) ->
+form(Module, Path, State) when is_map(Module) ->
+    module(Module, Path, State);
+form({'fun', _Line, _Name, Args, {type, _, {symbol, _, ReturnType}}, intrinsic}, Path, State) ->
+    {io_lib:format("declare ~s @~s(~s)~n", [type(ReturnType), Path, types([T || {param, _, _, {type, _, {symbol, _, T}}} <- Args])]),
+     State};
+form({'fun', _Line, _Name, _ArgsType, _ReturnType, Body, Types}, Path, State) ->
     {Exprs, State1} = expressions(Body, State#{types => Types}),
+    {io_lib:format("define void@~s() {~n~sret void~n}~n", [Path, Exprs]), State1};
+form(_, _, State) ->
+    {[], State}.
 
-    {["define void @.",
-      atom_to_list(Name),
-      "() {\n",
-      Exprs,
-      "ret void\n}\n"],
-     State1}.
 
 expressions(Exprs, State) ->
     lists:mapfoldl(
@@ -57,8 +67,8 @@ expression({value, _, V, Expr}, State = #{types := Types}) ->
              ], State1}
     end.
 
-value(_, _, {symbol, Symbol}, State) ->
-    {["@.", atom_to_list(Symbol)], [], State};
+value(_, _, {use, _, Path}, State) ->
+    {["@", path(Path)], [], State};
 value(_, V, {literal, Literal}, State) ->
     literal(V, Literal, State);
 value(Type, V, {call, Fun, Args}, State = #{types := Types}) ->
@@ -98,6 +108,9 @@ literal(V, {string, _, S}, State=#{literals := Literals, next := Next}) ->
        literals => Literals#{Next => S},
        next => Next + 1}}.
 
+types(Types) ->
+    string:join([[type(T), "*"] || T <- Types], ", ").
+
 type({term, 'fun', [ReturnType|ArgsType]}) ->
     io_lib:format(
       "~s(~s)*",
@@ -107,10 +120,13 @@ type(void) ->
     "void";
 type(int) ->
     "i32";
-type(usize) ->
+type(size) ->
     "i64";
 type(string) ->
     "i8 *".
+
+path(Path) ->
+    string:join([io_lib:format("~s", [P]) || P <- Path], ".").
 
 local_var(V) ->
     io_lib:format("%v~B", [V]).

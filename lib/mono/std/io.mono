@@ -1,0 +1,1 @@
+fun write(fd :int, buf :string, size :size) :void is intrinsic

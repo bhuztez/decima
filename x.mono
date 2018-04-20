@@ -1,5 +1,7 @@
-# comment
+use std.io.write
+
 fun main() :void
 is
+begin
   write(:int 0, "Hello, world!", :size 14)
 end

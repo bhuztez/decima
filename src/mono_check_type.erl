@@ -1,21 +1,31 @@
 -module(mono_check_type).
 
--export([module/1]).
+-export([modules/1]).
 
-module(Symbols) ->
+modules(Modules) ->
     maps:map(
-      fun(_, Form) ->
-              form(Form)
+      fun(_, Module) ->
+              module(Module, Modules)
+      end,
+      Modules).
+
+module(Symbols, Namespace) ->
+    maps:map(
+      fun(_, Form) when is_map(Form) ->
+              module(Form, Namespace);
+         (_, Form) ->
+              form(Form, Namespace)
       end,
       Symbols).
 
-form({'fun', Line, Name, ArgsType, ReturnType, Body}) ->
+form({'fun', Line, Name, ArgsType, ReturnType, Body}, Namespace) when is_list(Body) ->
     Tables =
-        #{ symbols => builtins(),
+        #{ namespace => Namespace,
            values => #{},
            types => #{},
            subst => [],
            next => 0},
+
     #{values := Values,
       subst := Subst
      } = expressions(Body, Tables),
@@ -25,10 +35,9 @@ form({'fun', Line, Name, ArgsType, ReturnType, Body}) ->
           fun(_, V) -> mono_unify:subst(V, Subst) end,
           Values),
 
-    {'fun', Line, Name, ArgsType, ReturnType, Body, Values1}.
-
-builtins() ->
-    #{write => {term, 'fun', [void, int, string, usize]}}.
+    {'fun', Line, Name, ArgsType, ReturnType, Body, Values1};
+form(Form, _) ->
+    Form.
 
 expressions(Exprs, Tables) ->
     lists:foldl(
@@ -36,15 +45,22 @@ expressions(Exprs, Tables) ->
       Tables,
       Exprs).
 
-expression({type, _, _V, _Type}, Tables) ->
-    Tables;
+expression({type, _, V, Type}, Tables) ->
+    {Var, Tables1} = get_var_of_value(V, Tables),
+    unify(Var, type(Type), Tables1);
 expression({value, _, V, Expr}, Tables) ->
     {Var, Tables1} = get_var_of_value(V, Tables),
     value(Expr, Var, Tables1).
 
-value({symbol, Symbol}, V, Tables) ->
-    {Type, Tables1} = lookup_symbol_type(Symbol, Tables),
-    unify(V, Type, Tables1);
+types(Types) ->
+    [type(T) || T <- Types].
+
+type({symbol, _, Name}) ->
+    Name.
+
+value({use, _, Path}, V, Tables = #{namespace := Namespace}) ->
+    Type = lookup_type(Path, Namespace),
+    unify(V, Type, Tables);
 value({literal, _}, _, Tables) ->
     Tables;
 value({call, Fun, Args}, V, Tables) ->
@@ -56,7 +72,6 @@ value({call, Fun, Args}, V, Tables) ->
           Args),
     unify(Fun1, {term, 'fun', [V|Args1]}, Tables2).
 
-
 get_var_of_value(V, Tables = #{values := Values, next := Next}) ->
     case maps:is_key(V, Values) of
         true ->
@@ -66,9 +81,10 @@ get_var_of_value(V, Tables = #{values := Values, next := Next}) ->
             {Var, Tables#{values := Values#{V => Var}, next := Next + 1}}
     end.
 
-
-lookup_symbol_type(Symbol, Tables = #{symbols := Symbols}) ->
-    {maps:get(Symbol, Symbols), Tables}.
+lookup_type([], {'fun', _, _, Args, {type, _, ReturnType}, _}) ->
+    {term, 'fun', [type(ReturnType)|types([Type || {param,_,_,{type,_,Type}} <- Args])]};
+lookup_type([H|T], Namespace) ->
+    lookup_type(T, maps:get(H, Namespace)).
 
 
 unify(X, Y, Tables = #{subst := Subst}) ->

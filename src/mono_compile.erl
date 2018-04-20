@@ -1,10 +1,10 @@
 -module(mono_compile).
 
--export([file/1]).
+-export([file/2]).
 
-file(Filename) ->
-    {ok, Symbols} = mono_parse:file(Filename),
-    Module = mono_resolve_var:module(Symbols),
-    Module1 = mono_check_type:module(Module),
-    Module2 = mono_codegen:module(Module1),
-    io:format("~s~n", [Module2]).
+file(Filename, LibPath) ->
+    Modules = mono_parse:file(Filename, LibPath),
+    Modules1 = mono_resolve_var:modules(Modules),
+    Modules2 = mono_check_type:modules(Modules1),
+    Modules3 = mono_codegen:modules(Modules2),
+    io:format("~s~n", [Modules3]).

@@ -5,7 +5,7 @@ Variable   = [A-Z][0-9a-zA-Z_]*
 Ignore     = _[0-9a-zA-Z_]*
 Int        = [0-9]+
 Whitespace = [\000-\s]+
-Reserved   = [:,(){}*|=]|=>|fun|is|return|begin|end
+Reserved   = [.:,(){}*|=]|=>|fun|is|return|begin|end|intrinsic|mod|use
 Comment    = #[^\n]*
 String     = \"([^\"]|\\.)*\"
 
